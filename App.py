@@ -8,4 +8,4 @@ if st.button("Test Code"):
   plt.title("Random 100-Unit Time Series")
   plt.xlabel("Time")
   plt.ylabel("Value")
-  plt.show()
+  st.pyplot(plt.gcf(time_series))
