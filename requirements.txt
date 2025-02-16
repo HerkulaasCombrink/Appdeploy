@@ -1,3 +1,4 @@
 #Create a requirements file for streamlit
 streamlit
 numpy
+matplotlib
