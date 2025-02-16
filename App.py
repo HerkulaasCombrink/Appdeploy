@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+st.button("Click me")
 # Generate random time series data
 time_series = np.random.randn(100)
 
