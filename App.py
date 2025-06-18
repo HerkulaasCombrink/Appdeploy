@@ -1,25 +1,27 @@
 import streamlit as st
-import spacy
+
+# Attempt to load spaCy
+try:
+    import spacy
+    nlp = spacy.load("en_core_web_sm")
+    SPACY_AVAILABLE = True
+except Exception as e:
+    nlp = None
+    SPACY_AVAILABLE = False
 
 # ----------------------------
-# Title and Introduction
+# Title
 # ----------------------------
-st.title("English Sentence Glossing with spaCy (Tutorial)")
+st.title("English Glossing App (with spaCy fallback)")
 st.write("""
-This app glosses English sentences using a custom dictionary and grammatical information from spaCy.
-It tokenizes and tags each word with its part of speech (POS), lemma, and gloss where available.
+This app glosses English sentences using a custom dictionary and, if available, 
+enriches them with part-of-speech tags and lemmas from spaCy. If spaCy is unavailable, 
+it falls back to a simple rule-based glossing engine.
 """)
 
 # ----------------------------
-# Load spaCy model
+# Mini Glossary
 # ----------------------------
-# Load the small English model (make sure it's downloaded)
-nlp = spacy.load("en_core_web_sm")
-
-# ----------------------------
-# Define a mini-glossary
-# ----------------------------
-# This is a very basic word-to-gloss dictionary.
 glossary = {
     "i": "1SG",
     "you": "2SG",
@@ -51,57 +53,54 @@ glossary = {
 }
 
 # ----------------------------
-# Glossing function with spaCy
+# Glossing Function
 # ----------------------------
-# This function uses spaCy to analyze the sentence,
-# and combines the POS, lemma, and gloss into a single display table.
-def gloss_with_spacy(sentence):
-    doc = nlp(sentence)
-    glossed_table = []
+def gloss_sentence(sentence):
+    if SPACY_AVAILABLE:
+        doc = nlp(sentence)
+        table = []
+        for token in doc:
+            word = token.text
+            lemma = token.lemma_
+            pos = token.pos_
+            gloss = glossary.get(word.lower(), f"{lemma}[?]")
+            table.append({
+                "Token": word,
+                "Lemma": lemma,
+                "POS": pos,
+                "Gloss": gloss
+            })
+        return table
+    else:
+        # Basic fallback if spaCy isn't available
+        tokens = sentence.split()
+        table = []
+        for word in tokens:
+            gloss = glossary.get(word.lower(), f"{word}[?]")
+            table.append({
+                "Token": word,
+                "Lemma": "-",
+                "POS": "-",
+                "Gloss": gloss
+            })
+        return table
 
-    for token in doc:
-        word = token.text
-        lemma = token.lemma_
-        pos = token.pos_
-        gloss = glossary.get(word.lower(), f"{lemma}[?]")
-        glossed_table.append({
-            "Token": word,
-            "Lemma": lemma,
-            "POS": pos,
-            "Gloss": gloss
-        })
+# ----------------------------
+# Input and Display
+# ----------------------------
+st.subheader("Enter a sentence:")
+user_input = st.text_input("Type a sentence to gloss", placeholder="e.g., I am reading a book")
 
-    return glossed_table
-
-# ----------------------------
-# Get user input
-# ----------------------------
-st.subheader("Enter a sentence to gloss:")
-user_input = st.text_input("Type your sentence here", placeholder="e.g., I am reading a book")
-
-# ----------------------------
-# Output results
-# ----------------------------
 if user_input:
     st.markdown("### Gloss Table")
-    results = gloss_with_spacy(user_input)
-    st.table(results)
+    glossed = gloss_sentence(user_input)
+    st.table(glossed)
 
-    st.markdown("### Notes")
-    st.write("""
-    - Glosses come from a custom dictionary. Unmatched words are lemmatized and marked with `[?]`.
-    - POS tags are from spaCy and follow Universal POS standards.
-    - This is a simplified educational example, not a full interlinear glossing tool.
-    """)
+    if not SPACY_AVAILABLE:
+        st.warning("spaCy is not available. Using basic rule-based glossing only (no POS or Lemmas).")
 
 # ----------------------------
-# Educational Footer
+# Footer
 # ----------------------------
 st.markdown("---")
-st.subheader("Extend This App")
-st.write("""
-To make this more linguistically accurate, you could:
-- Follow Leipzig Glossing Rules for full interlinear glossing.
-- Add morphological parsing or dependency trees.
-- Extend the glossary using real datasets or Universal Dependencies.
-""")
+st.write("Built as an educational demo. Expand the glossary or use full NLP pipelines for advanced glossing.")
