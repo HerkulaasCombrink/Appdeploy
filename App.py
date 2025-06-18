@@ -1,20 +1,25 @@
 import streamlit as st
+import spacy
 
 # ----------------------------
-# Title and introduction text
+# Title and Introduction
 # ----------------------------
-st.title("English Sentence Glossing Tutorial")
+st.title("English Sentence Glossing with spaCy (Tutorial)")
 st.write("""
-This simple app demonstrates how to gloss English sentences using a basic rule-based approach.
-In linguistics, glossing breaks down a sentence into word-by-word meaning or function.
-This version uses a mini-glossary to simulate glossing for demonstration purposes.
+This app glosses English sentences using a custom dictionary and grammatical information from spaCy.
+It tokenizes and tags each word with its part of speech (POS), lemma, and gloss where available.
 """)
 
 # ----------------------------
-# Step 1: Define a small glossary
+# Load spaCy model
 # ----------------------------
-# We create a dictionary that maps common English words to their gloss equivalents.
-# For example, 'I' becomes '1SG' (first-person singular), and 'am' becomes 'BE.PRES'.
+# Load the small English model (make sure it's downloaded)
+nlp = spacy.load("en_core_web_sm")
+
+# ----------------------------
+# Define a mini-glossary
+# ----------------------------
+# This is a very basic word-to-gloss dictionary.
 glossary = {
     "i": "1SG",
     "you": "2SG",
@@ -39,56 +44,64 @@ glossary = {
     "dog": "DOG.N",
     "cat": "CAT.N",
     "book": "BOOK.N",
-    "read": "READ.PRES",
+    "read": "READ",
     "reading": "READ.PROG",
     "run": "RUN.PRES",
     "running": "RUN.PROG",
 }
 
 # ----------------------------
-# Step 2: Glossing function
+# Glossing function with spaCy
 # ----------------------------
-# This function will:
-# 1. Convert the sentence to lowercase
-# 2. Tokenize it by splitting on spaces
-# 3. Replace each word with its gloss if it exists in the glossary
-# 4. If a word is not found, keep it as is but flag it with "[?]"
-def gloss_sentence(sentence):
-    words = sentence.lower().split()
-    glossed = []
-    for word in words:
-        gloss = glossary.get(word, f"{word}[?]")
-        glossed.append(gloss)
-    return " ".join(glossed)
+# This function uses spaCy to analyze the sentence,
+# and combines the POS, lemma, and gloss into a single display table.
+def gloss_with_spacy(sentence):
+    doc = nlp(sentence)
+    glossed_table = []
+
+    for token in doc:
+        word = token.text
+        lemma = token.lemma_
+        pos = token.pos_
+        gloss = glossary.get(word.lower(), f"{lemma}[?]")
+        glossed_table.append({
+            "Token": word,
+            "Lemma": lemma,
+            "POS": pos,
+            "Gloss": gloss
+        })
+
+    return glossed_table
 
 # ----------------------------
-# Step 3: Get user input
+# Get user input
 # ----------------------------
 st.subheader("Enter a sentence to gloss:")
 user_input = st.text_input("Type your sentence here", placeholder="e.g., I am reading a book")
 
 # ----------------------------
-# Step 4: Display glossed output
+# Output results
 # ----------------------------
 if user_input:
-    st.markdown("### Glossed Output:")
-    glossed = gloss_sentence(user_input)
-    st.code(glossed, language="text")
+    st.markdown("### Gloss Table")
+    results = gloss_with_spacy(user_input)
+    st.table(results)
+
+    st.markdown("### Notes")
     st.write("""
-    _Note: Words not found in the mini-glossary are marked with `[?]` for manual checking or expansion._
+    - Glosses come from a custom dictionary. Unmatched words are lemmatized and marked with `[?]`.
+    - POS tags are from spaCy and follow Universal POS standards.
+    - This is a simplified educational example, not a full interlinear glossing tool.
     """)
 
 # ----------------------------
-# Step 5: Educational notes
+# Educational Footer
 # ----------------------------
 st.markdown("---")
-st.subheader("About This App")
+st.subheader("Extend This App")
 st.write("""
-This is a simplified version of a glossing system. In professional linguistics,
-glosses follow the **Leipzig Glossing Rules** and include morphological and grammatical markers.
-
-To expand this app, consider:
-- Adding part-of-speech tagging
-- Using spaCy or NLTK for more complex analysis
-- Creating glosses for morphologically rich languages
+To make this more linguistically accurate, you could:
+- Follow Leipzig Glossing Rules for full interlinear glossing.
+- Add morphological parsing or dependency trees.
+- Extend the glossary using real datasets or Universal Dependencies.
 """)
